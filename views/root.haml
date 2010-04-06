@@ -1,0 +1,22 @@
+!!!
+%html{html_attrs('en-gb')}
+  %head
+    %meta{:'http-equiv' => "Content-Type", :content => "text/html; charset=utf-8"}
+    %meta{:name => "lang", :content => "en"}
+    %script{:src => 'http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js'}
+    %script{:src => '/m3u.js'}
+    %link{:type => 'text/css', :rel => "stylesheet", :media => "all", :href => "/style.css"}
+    %title SoundCloud m3u Convertor by clevername
+  %body
+    %h1 SoundCloud m3u Convertor
+    %p this takes soundcloud usernames and gives you back a playlist of their tracks in m3u form, which you can then drop into your player of choice, be it itunes, VLC, winamp, or if you are in fact a gentleman, foobar2000.
+    %p therefore you can listen to them however you please and you don't have to have a firefox tab full of ugly flash objects open all the time. I imagine this would also probably be pretty helpful to users of those snazzy smartphone things but I wouldn't know as I can't afford one.
+    %p simply pop the users's name in the box here and hit the button. you should take the url form of their username, not the one straight from their profile. For example, the user called [A]udio Dvice has a profile url of soundcloud.com/audio-dvice. it is the 'audio-dvice' bit we are interested in here.
+    
+    %form{:action => '/generate', :id => 'm3u'}
+      %input{:type => :text, :name => :username, :id => :username}
+      %input{:type => :submit, :value => 'Generate'}
+      
+    %p#message
+    
+    %ul#playlists
