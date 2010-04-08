@@ -5,12 +5,16 @@ require 'open-uri'
 require 'haml'
 require 'yajl/json_gem'
 
-set :environment, :development
-
 def glean(track, key)
   result = track.css(key)
   text = result[0].text
   return text
+end
+
+def user_from_url(url)
+  r = /soundcloud\.com\/([^\/]*).*/
+  res = r.match(url)
+  res ? res[1] : url
 end
 
 def get_user(user)
@@ -26,10 +30,10 @@ def get_user(user)
       :avatar_url => glean(e, 'avatar-url'),
       :permalink => glean(e, 'permalink')
     }
-    response.header['content-type'] = 'application/json'
+    content_type 'application/json'
     return data
-  rescue OpenURI::HTTPError => e
-    response.status = e.io.status[0]
+  rescue Exception => e
+    response.status = e.class.to_s != 'OpenURI::HTTPError' ? 500 : e.io.status[0]
     'soundcloud not happy. she say: '+e.message
   end
 end
@@ -39,7 +43,7 @@ def get_playlist(user)
 
   begin
     doc = Nokogiri::XML(open(url))
-    tracks = doc.root.children.xpath('//track')
+    tracks = doc.root.xpath('//track')
 
     m3u = ["#EXTM3U"] + tracks.collect do |t|
       line = '#EXTINF:'
@@ -51,12 +55,18 @@ def get_playlist(user)
       line2 = glean(t, 'stream-url')
       [line, line2].join("\n")+"\n"
     end
-    response.header['content-type'] = 'audio/x-mpegurl'
     
-    body = m3u.join("\n")
+    if(m3u == ["#EXTM3U"])
+      response.status = 404
+      'no tracks'
+    else
+      content_type 'audio/x-mpegurl'
+      m3u.join("\n")
+    end
     
-  rescue OpenURI::HTTPError => e
-    body = 'soundcloud not happy. she say: '+e.message
+  rescue Exception => e
+    response.status = e.class.to_s != 'OpenURI::HTTPError' ? 500 : e.io.status[0]
+    'soundcloud not happy. she say: '+e.message
   end
 end
 
@@ -64,12 +74,14 @@ get '/' do
   haml :root
 end
 
-get '/generate' do
-  redirect '/'+params[:username]+'.m3u'
+get '/user.json' do
+  user = user_from_url(params[:url])
+  get_user(user).to_json
 end
 
-get '/:user.json' do
-  get_user(params[:user]).to_json
+get '/playlist.m3u' do
+  user = user_from_url(params[:url])
+  redirect "/#{user}.m3u"
 end
 
 get '/:user.m3u' do
